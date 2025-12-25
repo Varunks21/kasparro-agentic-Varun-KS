@@ -1,0 +1,45 @@
+{
+  "product_name": "GlowBoost Vitamin C Serum",
+  "faqs": [
+    {
+      "category": "Usage",
+      "question": "How many drops of GlowBoost Vitamin C Serum should be applied?",
+      "answer": "Apply 2–3 drops of GlowBoost Vitamin C Serum."
+    },
+    {
+      "category": "Usage",
+      "question": "In which part of the skincare routine should GlowBoost Vitamin C Serum be used?",
+      "answer": "Apply GlowBoost Vitamin C Serum in the morning before sunscreen."
+    },
+    {
+      "category": "Usage",
+      "question": "When is the optimal time of day to apply GlowBoost Vitamin C Serum?",
+      "answer": "The optimal time of day to apply GlowBoost Vitamin C Serum is in the morning."
+    },
+    {
+      "category": "Product Info",
+      "question": "What is the concentration of Vitamin C in the GlowBoost Vitamin C Serum?",
+      "answer": "The concentration of Vitamin C in GlowBoost Vitamin C Serum is 10%."
+    },
+    {
+      "category": "Ingredients",
+      "question": "What are the main active ingredients in GlowBoost Vitamin C Serum?",
+      "answer": "The main active ingredients in GlowBoost Vitamin C Serum are Vitamin C and Hyaluronic Acid."
+    },
+    {
+      "category": "Safety",
+      "question": "What are the potential side effects of using GlowBoost Vitamin C Serum?",
+      "answer": "Potential side effects of using GlowBoost Vitamin C Serum include mild tingling for sensitive skin."
+    },
+    {
+      "category": "Safety",
+      "question": "Can GlowBoost Vitamin C Serum cause irritation for sensitive skin?",
+      "answer": "Yes, GlowBoost Vitamin C Serum can cause mild tingling for sensitive skin."
+    },
+    {
+      "category": "Safety",
+      "question": "Does GlowBoost Vitamin C Serum require a patch test before full application?",
+      "answer": "Mild tingling may occur for sensitive skin. A patch test is not specified."
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "title": "GlowBoost Vitamin C Serum vs RadiantDerma Brightening Elixir",
+  "competitor_name": "RadiantDerma Brightening Elixir",
+  "comparison_table": [
+    {
+      "feature": "Price",
+      "our_product": "₹699.0",
+      "competitor_product": "₹565.0",
+      "verdict": "Winner: Competitor"
+    },
+    {
+      "feature": "Active Ingredients",
+      "our_product": "2 key ingredients",
+      "competitor_product": "3 key ingredients",
+      "verdict": "Winner: Competitor"
+    },
+    {
+      "feature": "Premium Ingredients",
+      "our_product": "2 premium actives",
+      "competitor_product": "2 premium actives",
+      "verdict": "Winner: Us"
+    },
+    {
+      "feature": "Active Concentration",
+      "our_product": "10% Vitamin C",
+      "competitor_product": "Not specified",
+      "verdict": "Winner: Us (Transparency)"
+    },
+    {
+      "feature": "Key Strengths",
+      "our_product": "Brightening, Fades dark spots",
+      "competitor_product": "Affordable, Lightweight formula",
+      "verdict": "Winner: Us"
+    },
+    {
+      "feature": "Drawbacks",
+      "our_product": "Mild tingling for sensitive skin",
+      "competitor_product": "Lower Vitamin C concentration, Lacks Hyaluronic Acid for hydration",
+      "verdict": "Winner: Us"
+    }
+  ],
+  "summary_verdict": "GlowBoost Vitamin C Serum offers superior value with clinically effective 10% Vitamin C, 2 premium active ingredients, compared to RadiantDerma Brightening Elixir's basic formulation."
+}
