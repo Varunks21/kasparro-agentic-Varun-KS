@@ -347,22 +347,3 @@ Edit `src/utils/llm_client.py`:
 MODEL_NAME = "gemini-2.5-flash-lite"  # Change to preferred model
 ```
 
----
-
-## 📄 License
-
-MIT License
-
----
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Open a Pull Request
-
----
-
-**Built with ❤️ using Google Gemini AI**
