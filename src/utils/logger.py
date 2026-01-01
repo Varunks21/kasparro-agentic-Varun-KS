@@ -156,13 +156,13 @@ def log_agent_thought(agent_name: str, thought: str, details: dict = None):
     
     if details:
         for key, value in details.items():
-            logger.debug(f"   └─ {key}: {value}")
+            logger.debug(f"   - {key}: {value}")
 
 
 def log_llm_call(prompt_summary: str, model: str):
     """Log an LLM API call."""
     llm_logger.debug(f"🤖 Calling {model}")
-    llm_logger.debug(f"   └─ Prompt: {prompt_summary[:100]}...")
+    llm_logger.debug(f"   - Prompt: {prompt_summary[:100]}...")
 
 
 def log_llm_response(success: bool, tokens: int = None):

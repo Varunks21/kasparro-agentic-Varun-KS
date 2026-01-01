@@ -1,28 +1,193 @@
+"""
+Strategy Agent - Autonomous Strategic Planning Agent
+====================================================
+An autonomous agent responsible for strategic tasks like
+competitor analysis and FAQ generation.
+"""
+
 import typing
-from src.models.internal import ProductData, CompetitorData
-from src.utils.llm_client import get_structured_data
-from src.utils.logger import strategy_logger, log_agent_thought
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel
 
+from src.core.base_agent import BaseAgent, AgentCapability, AgentGoal, AgentState
+from src.core.messages import Message, MessageType
+from src.models.internal import ProductData, CompetitorData
+from src.utils.llm_client import get_structured_data
+from src.utils.logger import get_agent_logger
 
-# We define a small temporary model just for the list of questions
+logger = get_agent_logger("StrategyAgent")
+
+
+# Internal model for FAQ questions
 class QuestionList(BaseModel):
     questions: typing.List[str]
 
 
-class StrategyAgent:
+class StrategyAgent(BaseAgent):
+    """
+    Autonomous agent for strategic planning and analysis.
+    
+    Capabilities:
+    - generate_competitor: Create fictional competitor for comparison
+    - generate_faqs: Generate FAQ questions based on product data
+    - market_analysis: Analyze market positioning
+    
+    This agent makes autonomous decisions about competitive
+    positioning and customer experience strategy.
+    """
+    
     def __init__(self):
-        strategy_logger.debug("StrategyAgent initialized")
-
-    def generate_competitor(self, product: ProductData) -> CompetitorData:
+        super().__init__(
+            agent_id="strategy_agent",
+            name="Strategy Agent",
+            description="Autonomous agent for strategic analysis and planning",
+            capabilities=[
+                AgentCapability(
+                    name="generate_competitor",
+                    description="Generate fictional competitor data for comparison",
+                    input_types=["ProductData"],
+                    output_types=["CompetitorData"]
+                ),
+                AgentCapability(
+                    name="generate_faqs",
+                    description="Generate FAQ questions answerable from product data",
+                    input_types=["ProductData"],
+                    output_types=["List[str]"]
+                ),
+                AgentCapability(
+                    name="market_analysis",
+                    description="Analyze market positioning and strategy",
+                    input_types=["ProductData"],
+                    output_types=["MarketAnalysis"]
+                )
+            ]
+        )
+        
+    def plan(self, goal: AgentGoal) -> Optional[List[Dict[str, Any]]]:
         """
-        Creates a fictional competitor that is similar but slightly inferior
-        to our product to make for a good comparison.
+        Create a strategic plan based on the goal.
+        
+        The agent autonomously determines what strategic
+        tasks need to be performed.
         """
-        log_agent_thought("StrategyAgent", "Designing fictional competitor", {
+        self.logger.info(f"Planning strategy for goal: {goal.description}")
+        
+        context = goal.context
+        plan = []
+        
+        # Step 1: Acquire product data (from blackboard or context)
+        plan.append({
+            "action": "acquire_product_data",
+            "params": {}
+        })
+        
+        # Decision: What strategic tasks to perform?
+        task_type = context.get("task_type", "full_strategy")
+        
+        if task_type == "competitor" or task_type == "full_strategy":
+            self.memory.record_decision(
+                "Generate competitor analysis",
+                "Competitor data needed for comparison page"
+            )
+            plan.append({
+                "action": "generate_competitor",
+                "params": {}
+            })
+            
+        if task_type == "faqs" or task_type == "full_strategy":
+            self.memory.record_decision(
+                "Generate FAQ questions",
+                "FAQ questions needed for FAQ page"
+            )
+            plan.append({
+                "action": "generate_faqs",
+                "params": {}
+            })
+            
+        # Step: Publish all results
+        plan.append({
+            "action": "publish_results",
+            "params": {"goal_id": goal.id}
+        })
+        
+        self.logger.info(f"Strategy plan created with {len(plan)} steps")
+        return plan
+        
+    def execute(self, plan: List[Dict[str, Any]], goal: AgentGoal) -> bool:
+        """Execute the strategic plan."""
+        
+        product_data = None
+        competitor_data = None
+        faq_questions = None
+        
+        for step in plan:
+            action = step["action"]
+            params = step["params"]
+            
+            self.logger.debug(f"Executing strategy step: {action}")
+            
+            try:
+                if action == "acquire_product_data":
+                    # Try to get from blackboard first
+                    product_data = self.read_from_blackboard("product_data")
+                    
+                    if not product_data:
+                        # Try from context
+                        if "product_data" in goal.context:
+                            product_data = ProductData(**goal.context["product_data"])
+                            
+                    if not product_data:
+                        self.logger.error("No product data available")
+                        self.memory.record_outcome(action, False, "Product data not found")
+                        
+                        # Request from parser agent
+                        self.request_assistance(
+                            "Need product data for strategy",
+                            "parse_raw_data"
+                        )
+                        return False
+                        
+                    self.memory.record_outcome(action, True, f"Got data for: {product_data.name}")
+                    
+                elif action == "generate_competitor":
+                    competitor_data = self._generate_competitor(product_data)
+                    if not competitor_data:
+                        self.memory.record_outcome(action, False, "Failed to generate competitor")
+                        return False
+                    self.memory.record_outcome(action, True, f"Generated: {competitor_data.name}")
+                    
+                elif action == "generate_faqs":
+                    faq_questions = self._generate_faqs(product_data)
+                    if not faq_questions:
+                        self.memory.record_outcome(action, False, "Failed to generate FAQs")
+                        return False
+                    self.memory.record_outcome(action, True, f"Generated {len(faq_questions)} questions")
+                    
+                elif action == "publish_results":
+                    self._publish_results(competitor_data, faq_questions, params.get("goal_id"))
+                    self.memory.record_outcome(action, True)
+                    
+            except Exception as e:
+                self.logger.error(f"Strategy step '{action}' failed: {e}")
+                self.memory.record_outcome(action, False, str(e))
+                return False
+                
+        return True
+        
+    def _generate_competitor(self, product: ProductData) -> Optional[CompetitorData]:
+        """
+        Generate a fictional competitor product.
+        
+        The agent uses its strategic knowledge to create a
+        realistic but inferior competitor for comparison.
+        """
+        self.logger.info(f"Generating competitor for: {product.name}")
+        
+        self.memory.record_observation({
+            "type": "competitor_generation_start",
             "base_product": product.name,
-            "price_point": f"₹{product.price_inr}",
-            "target_competitor_price": f"₹{int(product.price_inr * 0.80)}"
+            "price_point": product.price_inr
         })
         
         prompt = f"""
@@ -50,22 +215,33 @@ class StrategyAgent:
         Return the result strictly as the CompetitorData JSON structure.
         """
         
-        result = get_structured_data(prompt, CompetitorData)
-        
-        strategy_logger.info(f"✓ Competitor generated: {result.name}")
-        strategy_logger.debug(f"  └─ Price: ₹{result.price_inr}")
-        strategy_logger.debug(f"  └─ Pros: {result.pros}")
-        strategy_logger.debug(f"  └─ Cons: {result.cons}")
-        
-        return result
-
-    def generate_faqs_concepts(self, product: ProductData) -> typing.List[str]:
+        try:
+            result = get_structured_data(prompt, CompetitorData)
+            
+            self.logger.info(f"✓ Competitor generated: {result.name}")
+            self.logger.debug(f"  - Price: ₹{result.price_inr}")
+            self.logger.debug(f"  - Pros: {result.pros}")
+            self.logger.debug(f"  - Cons: {result.cons}")
+            
+            return result
+            
+        except Exception as e:
+            self.logger.error(f"Competitor generation failed: {e}")
+            return None
+            
+    def _generate_faqs(self, product: ProductData) -> Optional[List[str]]:
         """
-        Generates questions that CAN be accurately answered from the product data.
+        Generate FAQ questions that can be answered from product data.
+        
+        The agent strategically creates questions that showcase
+        the product's strengths and address customer concerns.
         """
-        log_agent_thought("StrategyAgent", "Generating answerable FAQ questions", {
+        self.logger.info(f"Generating FAQ questions for: {product.name}")
+        
+        self.memory.record_observation({
+            "type": "faq_generation_start",
             "product": product.name,
-            "data_points_available": f"{len(product.key_ingredients)} ingredients, {len(product.benefits)} benefits"
+            "data_points": len(product.key_ingredients) + len(product.benefits)
         })
         
         # Build comprehensive product context
@@ -85,7 +261,7 @@ class StrategyAgent:
         """
         
         prompt = f"""
-        You are a Customer Experience Strategist creating an FAQ section.
+        You are a Customer Experience Strategist creating a comprehensive FAQ section.
         
         IMPORTANT: Generate questions that CAN BE 100% ACCURATELY ANSWERED using ONLY the product data below.
         Do NOT generate questions about information not present in the data.
@@ -93,46 +269,163 @@ class StrategyAgent:
         PRODUCT DATA:
         {product_context}
         
-        Generate exactly 10 distinct questions across these categories:
+        Generate exactly 15 distinct questions across these categories:
         
-        1. USAGE QUESTIONS (3 questions) - About how to use the product
+        1. INFORMATIONAL QUESTIONS (3 questions) - General product information
+           Examples: "What is this product?", "What are the key ingredients?", "What concentration is used?"
+        
+        2. USAGE QUESTIONS (3 questions) - About how to use the product
            Examples: "How much should I apply?", "When should I use it?", "How often should beginners use it?"
-        
-        2. INGREDIENT QUESTIONS (2 questions) - About what's in the product
-           Examples: "What is the active ingredient concentration?", "What are the key ingredients?"
         
         3. SAFETY QUESTIONS (3 questions) - About warnings and side effects
            Examples: "What side effects might occur?", "Is it safe during pregnancy?", "Do I need sunscreen?"
         
-        4. PRODUCT INFO QUESTIONS (2 questions) - About price, skin types, storage
-           Examples: "What skin types is this for?", "What is the price?", "How should I store it?"
+        4. PURCHASE QUESTIONS (2 questions) - About buying and value
+           Examples: "What is the price?", "Is it worth the price?", "What value does it offer?"
+        
+        5. COMPARISON QUESTIONS (2 questions) - Comparing to alternatives
+           Examples: "How does this compare to other products?", "What makes this product different?"
+        
+        6. SKIN TYPE QUESTIONS (2 questions) - About suitability
+           Examples: "What skin types is this for?", "Can sensitive skin use this?", "Is it good for oily skin?"
         
         CRITICAL: Every question MUST be answerable from the product data provided above.
         
-        Output: A list of exactly 10 question strings.
+        Output: A list of exactly 15 question strings.
         """
         
-        result = get_structured_data(prompt, QuestionList)
+        try:
+            result = get_structured_data(prompt, QuestionList)
+            
+            self.logger.info(f"✓ Generated {len(result.questions)} FAQ questions")
+            for i, q in enumerate(result.questions[:3], 1):
+                self.logger.debug(f"  - Q{i}: {q[:50]}...")
+            
+            return result.questions
+            
+        except Exception as e:
+            self.logger.error(f"FAQ generation failed: {e}")
+            return None
+            
+    def _publish_results(
+        self,
+        competitor_data: Optional[CompetitorData],
+        faq_questions: Optional[List[str]],
+        goal_id: str
+    ) -> None:
+        """Publish strategy results to the blackboard."""
         
-        strategy_logger.info(f"✓ Generated {len(result.questions)} FAQ questions")
-        for i, q in enumerate(result.questions[:3], 1):
-            strategy_logger.debug(f"  └─ Q{i}: {q[:50]}...")
+        results = {}
         
-        return result.questions
+        if competitor_data:
+            self.post_to_blackboard(
+                "competitor_data",
+                competitor_data,
+                tags={"strategy", "competitor"}
+            )
+            results["competitor"] = competitor_data
+            self.logger.info("Published competitor data to blackboard")
+            
+        if faq_questions:
+            self.post_to_blackboard(
+                "faq_questions",
+                faq_questions,
+                tags={"strategy", "faq"}
+            )
+            results["faq_questions"] = faq_questions
+            self.logger.info("Published FAQ questions to blackboard")
+            
+        # Post combined result
+        self.post_to_blackboard(
+            f"result_{goal_id}",
+            results,
+            tags={"result"}
+        )
+        
+    def on_message(self, message: Message) -> None:
+        """Handle custom messages."""
+        self.logger.debug(f"Received message type: {message.type}")
+        
+        # Handle data responses (e.g., from parser agent)
+        if message.type == MessageType.DATA_RESPONSE:
+            data_key = message.content.get("data_key")
+            if data_key == "product_data":
+                # Store for later use
+                self.memory.record_observation({
+                    "type": "received_product_data",
+                    "from": message.sender
+                })
+                
+    def on_task_request(
+        self,
+        task_name: str,
+        params: Dict[str, Any],
+        message: Message
+    ) -> None:
+        """
+        Handle task requests from other agents.
+        
+        Enables collaboration by providing strategy services.
+        """
+        if task_name == "generate_competitor":
+            product_data = params.get("product_data")
+            if product_data:
+                if isinstance(product_data, dict):
+                    product_data = ProductData(**product_data)
+                    
+                competitor = self._generate_competitor(product_data)
+                if competitor:
+                    self.send_message(
+                        MessageType.DATA_RESPONSE,
+                        message.sender,
+                        {
+                            "task": task_name,
+                            "result": competitor.model_dump(),
+                            "success": True
+                        }
+                    )
+                    return
+                    
+        elif task_name == "generate_faqs":
+            product_data = params.get("product_data")
+            if product_data:
+                if isinstance(product_data, dict):
+                    product_data = ProductData(**product_data)
+                    
+                questions = self._generate_faqs(product_data)
+                if questions:
+                    self.send_message(
+                        MessageType.DATA_RESPONSE,
+                        message.sender,
+                        {
+                            "task": task_name,
+                            "result": questions,
+                            "success": True
+                        }
+                    )
+                    return
+                    
+        # Send failure response
+        self.send_message(
+            MessageType.TASK_FAILED,
+            message.sender,
+            {
+                "task": task_name,
+                "reason": "Failed to execute strategic task"
+            }
+        )
 
 
-if __name__ == "__main__":
-    from src.agents.parser_agent import parse_raw_data
+# Backwards compatibility - class wrapper
+class LegacyStrategyAgent:
+    """Legacy wrapper for backwards compatibility."""
     
-    product = parse_raw_data("data/raw_input.txt")
-    
-    agent = StrategyAgent()
-    comp = agent.generate_competitor(product)
-    qs = agent.generate_faqs_concepts(product)
-    
-    strategy_logger.info("\n--- Fictional Competitor ---")
-    strategy_logger.info(comp.model_dump_json(indent=2))
-    
-    strategy_logger.info("\n--- Brainstormed Questions ---")
-    for q in qs:
-        strategy_logger.info(f"- {q}")
+    def __init__(self):
+        self._agent = StrategyAgent()
+        logger.debug("StrategyAgent initialized (legacy mode)")
+        
+    def generate_competitor(self, product: ProductData) -> CompetitorData:
+        return self._agent._generate_competitor(product)
+        
+    def generate_faqs_concepts(self, product: ProductData) -> List[str]:
+        return self._agent._generate_faqs(product)

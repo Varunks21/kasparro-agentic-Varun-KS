@@ -1,19 +1,19 @@
 {
-  "title": "GlowBoost Vitamin C Serum",
-  "price": "₹699.0",
-  "description": "A premium 10% Vitamin C formulation designed for Oily, Combination skin types.",
+  "title": "NightRenew Retinol Serum",
+  "price": "₹899.0",
+  "description": "A premium 0.5% Retinol formulation designed for Normal, Dry, Mature skin types.",
   "key_benefits": [
-    "Vitamin C targets and reduces the appearance of dark spots.",
-    "Hyaluronic Acid supports skin's natural radiance for a brighter look.",
-    "Vitamin C helps to achieve a more luminous and even complexion.",
-    "Hyaluronic Acid contributes to the skin's overall brightening effect."
+    "Retinol works to reduce the appearance of fine lines.",
+    "Ceramides support skin barrier function for anti-aging.",
+    "Retinol contributes to an anti-aging effect.",
+    "Ceramides help skin appear smoother and reduce fine lines."
   ],
   "usage_guide": [
-    "1. Apply 2-3 drops.",
-    "2. Apply before sunscreen."
+    "1. Apply 2-3 drops at night.",
+    "2. Follow with moisturizer."
   ],
   "ingredients_list": [
-    "Vitamin C",
-    "Hyaluronic Acid"
+    "Retinol",
+    "Ceramides"
   ]
 }

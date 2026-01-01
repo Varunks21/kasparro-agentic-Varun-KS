@@ -1,72 +1,88 @@
-# 🚀 Kasparro AI Agentic Content Generation System
+# 🚀 Kasparro AI - True Multi-Agent Content Generation System
 
-A modular, multi-agent automation system that transforms raw, unstructured product data into production-ready, structured content for e-commerce websites.
+A **true multi-agent system** that transforms raw, unstructured product data into production-ready, structured content. Unlike simple sequential pipelines, this system features **autonomous agents**, **dynamic coordination**, and **message-based communication**.
 
 ---
 
 ## 📋 Table of Contents
 
 1. [Overview](#1-overview)
-2. [System Architecture](#2-system-architecture)
+2. [Multi-Agent Architecture](#2-multi-agent-architecture)
 3. [Quick Start](#3-quick-start)
 4. [Project Structure](#4-project-structure)
-5. [Input & Output](#5-input--output)
-6. [Agents & Components](#6-agents--components)
+5. [Core Framework](#5-core-framework)
+6. [Agents](#6-agents)
 7. [Running Tests](#7-running-tests)
 8. [Logging & Observability](#8-logging--observability)
 9. [Troubleshooting](#9-troubleshooting)
-10. [API Rate Limits](#10-api-rate-limits)
 
 ---
 
 ## 1. Overview
 
-Unlike simple LLM wrappers, this system uses a **Directed Acyclic Graph (DAG)** architecture where distinct "Agents" handle specific responsibilities:
+This system implements a **True Multi-Agent Architecture** demonstrating:
 
-- **Parsing** → Extracts structured data from raw text
-- **Strategy** → Generates FAQs and competitor analysis
-- **Content Generation** → Creates marketing copy
-- **Assembly** → Builds final JSON outputs
-
-The system enforces strict data contracts using **Pydantic models** to ensure the final output is always machine-readable JSON.
+| Feature | Description |
+|---------|-------------|
+| **Agent Autonomy** | Each agent has goals, state, memory, and decision-making |
+| **Dynamic Coordination** | Orchestrator assigns tasks based on capabilities |
+| **Message-Based Communication** | Agents communicate via message bus |
+| **Shared Knowledge** | Blackboard pattern for data exchange |
+| **Dependency Resolution** | Tasks execute respecting dependencies |
 
 ---
 
-## 2. System Architecture
+## 2. Multi-Agent Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                        PIPELINE FLOW                            │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  [Raw Text]  →  [Parser Agent]  →  [Internal Model]            │
-│       │              │                    │                     │
-│       └──────────────┴────────────────────┘                     │
-│                           ↓                                     │
-│              [Strategy Agent]                                   │
-│              ├── Generate FAQs                                  │
-│              └── Create Competitor                              │
-│                           ↓                                     │
-│              [Logic Blocks]                                     │
-│              ├── Benefits Block                                 │
-│              ├── Usage Block                                    │
-│              └── Comparison Block                               │
-│                           ↓                                     │
-│              [Builder Agent]                                    │
-│                           ↓                                     │
-│  ┌────────────────┬────────────────┬────────────────┐          │
-│  │ product_page   │   faq.json     │ comparison_    │          │
-│  │    .json       │                │   page.json    │          │
-│  └────────────────┴────────────────┴────────────────┘          │
-└─────────────────────────────────────────────────────────────────┘
+                    ┌──────────────────────────────────────┐
+                    │           ORCHESTRATOR               │
+                    │  • Agent Registry                    │
+                    │  • Task Queue & Scheduling           │
+                    │  • Dependency Resolution             │
+                    │  • Capability-Based Routing          │
+                    └──────────────┬───────────────────────┘
+                                   │
+            ┌──────────────────────┼──────────────────────┐
+            │                      │                      │
+            ▼                      ▼                      ▼
+  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
+  │  PARSER AGENT   │  │ STRATEGY AGENT  │  │  BUILDER AGENT  │
+  │                 │  │                 │  │                 │
+  │ • parse_raw_data│  │ • gen_competitor│  │ • build_product │
+  │ • validate_data │  │ • generate_faqs │  │ • build_faq     │
+  │                 │  │                 │  │ • build_compare │
+  │ State: IDLE →   │  │ State: IDLE →   │  │ State: IDLE →   │
+  │ THINKING →      │  │ THINKING →      │  │ THINKING →      │
+  │ EXECUTING       │  │ EXECUTING       │  │ EXECUTING       │
+  └────────┬────────┘  └────────┬────────┘  └────────┬────────┘
+           │                    │                    │
+           └────────────────────┼────────────────────┘
+                                │
+              ┌─────────────────┴─────────────────┐
+              │                                   │
+        ┌─────▼─────┐                     ┌───────▼───────┐
+        │  MESSAGE  │                     │  BLACKBOARD   │
+        │    BUS    │                     │ (Shared State)│
+        │           │                     │               │
+        │ • Pub/Sub │                     │ • product_data│
+        │ • Routing │                     │ • competitor  │
+        │ • History │                     │ • faq_qs      │
+        └───────────┘                     │ • pages       │
+                                          └───────────────┘
 ```
 
-### Workflow Steps:
+### Key Differences from Sequential Pipeline
 
-1. **Ingestion (Parser Agent)** - Reads raw text, extracts entities into `ProductData`
-2. **Strategy (Strategy Agent)** - Generates FAQ questions and fictional competitor
-3. **Content Generation (Logic Blocks)** - Creates marketing copy, usage steps, comparisons
-4. **Assembly (Builder Agent)** - Builds final JSON files with validated schemas
+| Aspect | Old (Sequential) | New (Multi-Agent) |
+|--------|------------------|-------------------|
+| Control Flow | Hardcoded in main.py | Dynamic via Orchestrator |
+| Communication | Direct function calls | Message Bus |
+| Data Sharing | Return values | Shared Blackboard |
+| Task Assignment | Fixed order | Capability-based routing |
+| Agent State | None | Full state machine |
+| Decision Making | Centralized | Distributed to agents |
+| Collaboration | None | Request assistance pattern |
 
 ---
 
@@ -82,17 +98,15 @@ The system enforces strict data contracts using **Pydantic models** to ensure th
 ```bash
 # Clone the repository
 git clone <your-repo-url>
-cd kasparro-ai-agentic-content-generation-system
+cd kasparro-agentic-Varun-KS
 
-# Create virtual environment (recommended)
+# Create virtual environment
 python -m venv .venv
 
-# Activate virtual environment
-# Windows PowerShell:
+# Activate (Windows PowerShell)
 .\.venv\Scripts\Activate.ps1
-# Windows CMD:
-.\.venv\Scripts\activate.bat
-# Linux/Mac:
+
+# Activate (Linux/Mac)
 source .venv/bin/activate
 
 # Install dependencies
@@ -101,21 +115,17 @@ pip install -r requirements.txt
 
 ### Step 2: Configure API Key
 
-Create a `.env` file in the project root:
+Create a `.env` file:
 
 ```env
 GEMINI_API_KEY=your_api_key_here
 ```
 
-### Step 3: Run the Pipeline
+### Step 3: Run the Multi-Agent System
 
 ```bash
 # Windows PowerShell
 $env:PYTHONPATH = "."
-python -m src.main
-
-# Windows CMD
-set PYTHONPATH=.
 python -m src.main
 
 # Linux/Mac
@@ -124,127 +134,153 @@ PYTHONPATH=. python -m src.main
 
 ### Step 4: Check Output
 
-After successful execution, find your generated files in:
-- `output/product_page.json`
-- `output/faq.json`
-- `output/comparison_page.json`
+Generated files in `output/`:
+- `product_page.json` - Product information page
+- `faq.json` - FAQ with accurate answers
+- `comparison_page.json` - Product vs competitor
 
 ---
 
 ## 4. Project Structure
 
 ```
-kasparro-ai-agentic-content-generation-system/
-│
-├── data/
-│   └── raw_input.txt           # Input: Raw product data
-│
-├── output/                      # Output: Generated JSON files
-│   ├── product_page.json
-│   ├── faq.json
-│   └── comparison_page.json
-│
-├── logs/
-│   └── system.log              # Detailed execution logs
+kasparro-agentic-Varun-KS/
 │
 ├── src/
-│   ├── agents/                  # Agent implementations
-│   │   ├── parser_agent.py     # Parses raw text → ProductData
-│   │   ├── strategy_agent.py   # Generates FAQs & competitor
-│   │   └── builder_agent.py    # Assembles final JSON pages
+│   ├── core/                      # 🆕 Multi-Agent Framework
+│   │   ├── __init__.py
+│   │   ├── base_agent.py         # Abstract autonomous agent
+│   │   ├── messages.py           # Message bus & protocol
+│   │   ├── blackboard.py         # Shared knowledge space
+│   │   └── orchestrator.py       # Dynamic coordinator
 │   │
-│   ├── blocks/                  # Reusable logic blocks
-│   │   ├── benefits.py         # Marketing copy generator
-│   │   ├── usage.py            # Usage step formatter
-│   │   └── comparison.py       # Product comparison logic
+│   ├── agents/                    # Autonomous Agents
+│   │   ├── parser_agent.py       # Data extraction agent
+│   │   ├── strategy_agent.py     # Strategic planning agent
+│   │   └── builder_agent.py      # Content assembly agent
 │   │
-│   ├── models/                  # Pydantic data models
-│   │   ├── internal.py         # ProductData, CompetitorData
-│   │   └── output.py           # FAQPage, ProductPage, ComparisonPage
+│   ├── blocks/                    # Reusable logic blocks
+│   │   ├── benefits.py
+│   │   ├── usage.py
+│   │   └── comparison.py
 │   │
-│   ├── utils/                   # Utilities
-│   │   ├── llm_client.py       # Gemini API client
-│   │   └── logger.py           # Professional logging
+│   ├── models/                    # Pydantic data models
+│   │   ├── internal.py
+│   │   └── output.py
 │   │
-│   └── main.py                  # Main pipeline entry point
+│   ├── utils/
+│   │   ├── llm_client.py
+│   │   └── logger.py
+│   │
+│   └── main.py                    # Multi-agent entry point
+│
+├── data/
+│   └── raw_input.txt              # Input data
+│
+├── output/                        # Generated JSON files
+├── logs/                          # Execution logs
+├── docs/
+│   └── projectdocumentation.md   # Detailed architecture docs
 │
 ├── tests/
-│   └── test_integrity.py       # Output validation tests
+│   └── test_integrity.py
 │
-├── .env                         # API key (create this!)
-├── requirements.txt             # Python dependencies
-└── README.md                    # This file
+├── requirements.txt
+└── README.md
 ```
 
 ---
 
-## 5. Input & Output
+## 5. Core Framework
 
-### Input Format
+### BaseAgent (`src/core/base_agent.py`)
 
-Place your product data in `data/raw_input.txt`:
+Abstract class providing agent autonomy:
 
-```text
-Product Name: RenewAge Retinol Night Cream
-Concentration: 0.3% Encapsulated Retinol + Peptides
-Price: ₹899
-
-Skin Type: Normal, Dry, Combination, Oily
-
-Key Ingredients:
-- 0.3% Encapsulated Retinol
-- Ceramides (NP, AP, EOP)
-- Peptide Complex (Matrixyl 3000)
-
-Benefits:
-- Accelerates cell turnover
-- Reduces wrinkles and fine lines
-- Strengthens skin barrier
-
-How to Use: Use only in PM routine. Apply pea-sized amount...
-
-Side Effects: Purging may occur during first 2-4 weeks...
+```python
+class BaseAgent(ABC):
+    # Identity & Capabilities
+    agent_id: str
+    capabilities: List[AgentCapability]
+    
+    # State Machine
+    state: AgentState  # IDLE, THINKING, EXECUTING, WAITING, COMPLETED
+    
+    # Memory (decisions, outcomes, observations)
+    memory: AgentMemory
+    
+    # Abstract methods - subclasses implement these
+    def plan(goal) -> List[Action]   # Agent plans autonomously
+    def execute(plan, goal) -> bool  # Agent executes plan
+    
+    # Communication
+    def send_message(type, recipient, content)
+    def post_to_blackboard(key, value)
+    def request_assistance(task, capability)
 ```
 
-### Output Files
+### Orchestrator (`src/core/orchestrator.py`)
 
-| File | Description |
-|------|-------------|
-| `product_page.json` | Product title, price, benefits, usage guide, ingredients |
-| `faq.json` | Categorized Q&A (Usage, Safety, Ingredients) |
-| `comparison_page.json` | Side-by-side comparison with fictional competitor |
+Dynamic coordination engine:
+
+```python
+class Orchestrator:
+    registry: AgentRegistry   # Agent discovery
+    message_bus: MessageBus   # Communication backbone
+    blackboard: Blackboard    # Shared state
+    
+    # Dynamic task assignment
+    def submit_workflow(workflow)
+        # 1. Analyze task dependencies
+        # 2. Find capable agents
+        # 3. Assign goals to agents
+        # 4. Monitor progress
+        # 5. Handle failures & collaboration
+```
+
+### Message Types (`src/core/messages.py`)
+
+```python
+class MessageType(Enum):
+    TASK_REQUEST      # Request agent to do something
+    TASK_COMPLETE     # Report completion
+    DATA_REQUEST      # Request data from agent
+    DATA_RESPONSE     # Respond with data
+    GOAL_ASSIGNED     # Orchestrator assigns goal
+    NEED_ASSISTANCE   # Request help from others
+```
 
 ---
 
-## 6. Agents & Components
+## 6. Agents
 
-### A. Agents (Orchestrators)
+### Parser Agent
+**Capabilities**: `parse_raw_data`, `validate_data`
 
-| Agent | Role | Responsibility |
-|-------|------|----------------|
-| **Parser Agent** | The Reader | Extracts structured data from raw text |
-| **Strategy Agent** | The Planner | Generates FAQ questions & competitor attributes |
-| **Builder Agent** | The Assembler | Builds final JSON outputs |
+**Autonomous Behavior**:
+- Decides how to read input (file vs provided text)
+- Creates multi-step plan for extraction
+- Validates output before publishing to blackboard
 
-### B. Logic Blocks (Workers)
+### Strategy Agent
+**Capabilities**: `generate_competitor`, `generate_faqs`
 
-| Block | Function | Input → Output |
-|-------|----------|----------------|
-| **Benefits Block** | Marketing copy | `ingredients` → `bullet points` |
-| **Usage Block** | Step formatting | `raw_text` → `numbered steps` |
-| **Comparison Block** | Analysis | `ProductA + ProductB` → `comparison table` |
+**Autonomous Behavior**:
+- Acquires product data from blackboard
+- Decides which strategic tasks to perform
+- Can request assistance if data missing
 
-### C. Data Models (Guardrails)
+### Builder Agent
+**Capabilities**: `build_product_page`, `build_faq_page`, `build_comparison_page`
 
-- **`ProductData`** - Internal product representation
-- **`CompetitorData`** - Fictional competitor schema
-- **`FAQPage`** / **`ProductPage`** / **`ComparisonPage`** - Output schemas
+**Autonomous Behavior**:
+- Gathers required data from blackboard
+- Coordinates logic blocks for content
+- Requests missing data from other agents
 
 ---
 
 ## 7. Running Tests
-
-Validate that your output files are correctly structured:
 
 ```bash
 # Windows PowerShell
@@ -255,95 +291,64 @@ python -m pytest tests/test_integrity.py -v
 PYTHONPATH=. python -m pytest tests/test_integrity.py -v
 ```
 
-### Expected Output:
-```
-tests/test_integrity.py::test_output_files_exist PASSED
-tests/test_integrity.py::test_product_page_schema PASSED
-tests/test_integrity.py::test_faq_page_logic PASSED
-tests/test_integrity.py::test_comparison_winner PASSED
-
-============================== 4 passed ==============================
-```
-
 ---
 
 ## 8. Logging & Observability
 
-The system uses professional logging with dual output:
-
-- **Console**: Real-time progress (INFO level)
-- **File**: Detailed trace (`logs/system.log`)
-
-### Sample Console Output:
+### Console Output
 ```
 INFO | KASPARRO AI CONTENT ENGINE - Pipeline Started
-INFO | [THOUGHT] Phase 1: Parsing raw product data
-INFO | [OK] Data parsed successfully: RenewAge Retinol Night Cream
-INFO | [THOUGHT] Phase 2: Strategy generation
-INFO | [OK] Competitor generated: LumiGlow Overnight Cream
-INFO | [FILE] Saved: output\product_page.json
+INFO | Initializing Multi-Agent System...
+INFO | Orchestrator initialized
+INFO | Registered 3 agents
+INFO | Available capabilities: ['parse_raw_data', 'validate_data', ...]
+INFO | Workflow defined: Content Generation Pipeline
+INFO | Assigned task 'Parse Product Data' to Parser Agent
+INFO | [OK] Product page saved
 INFO | PIPELINE COMPLETE
 ```
 
-### View Detailed Logs:
-```bash
-# Windows
-type logs\system.log
+### Agent Decision Trail
+The system logs agent decisions:
+```
+Parser Agent Decisions:
+  └─ Read from file
+      Reasoning: File path provided: data/raw_input.txt
+  └─ Execute plan for: Extract and structure product data
+      Reasoning: Generated 4 steps
+```
 
-# Linux/Mac
-cat logs/system.log
+### Detailed Logs
+```bash
+type logs\system.log  # Windows
+cat logs/system.log   # Linux/Mac
 ```
 
 ---
 
 ## 9. Troubleshooting
 
-### Issue: `ModuleNotFoundError: No module named 'src'`
-
-**Solution**: Set PYTHONPATH before running:
+### `ModuleNotFoundError: No module named 'src'`
 ```bash
-# Windows PowerShell
-$env:PYTHONPATH = "."
-python -m src.main
+$env:PYTHONPATH = "."  # Windows PowerShell
+export PYTHONPATH=.    # Linux/Mac
 ```
 
-### Issue: `GEMINI_API_KEY not found in .env file`
+### `GEMINI_API_KEY not found`
+Create `.env` file with your API key.
 
-**Solution**: Create `.env` file in project root:
-```env
-GEMINI_API_KEY=your_api_key_here
-```
-
-### Issue: `429 You exceeded your current quota`
-
-**Solution**: See [API Rate Limits](#10-api-rate-limits) section.
-
-### Issue: Unicode/Emoji errors on Windows
-
-**Solution**: The logging system automatically handles this. If issues persist, ensure your terminal supports UTF-8.
+### API Rate Limits (429)
+- Wait for quota reset (daily at midnight Pacific)
+- Create new API key at [AI Studio](https://aistudio.google.com/apikey)
 
 ---
 
-## 10. API Rate Limits
+## 📚 Documentation
 
-The Gemini API has **free tier limits**:
+For detailed architecture documentation, see [`docs/projectdocumentation.md`](docs/projectdocumentation.md).
 
-| Model | Daily Limit | Requests/Minute |
-|-------|-------------|-----------------|
-| gemini-2.5-flash | 20/day | 2/min |
-| gemini-2.5-flash-lite | 20/day | 2/min |
-| gemini-2.5-pro | 5/day | 2/min |
+---
 
-### If You Hit Rate Limits:
+## License
 
-1. **Wait** - Quotas reset daily at midnight (Pacific Time)
-2. **New API Key** - Create a new key at [AI Studio](https://aistudio.google.com/apikey)
-3. **Upgrade** - Consider paid tier for higher limits
-
-### Change Model (Optional):
-
-Edit `src/utils/llm_client.py`:
-```python
-MODEL_NAME = "gemini-2.5-flash-lite"  # Change to preferred model
-```
-
+MIT License - See [LICENSE](LICENSE) file.

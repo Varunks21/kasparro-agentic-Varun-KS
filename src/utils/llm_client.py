@@ -92,7 +92,7 @@ def get_structured_data(prompt: str, data_model: typing.Type[BaseModel]):
     
     # Log the API call
     log_llm_call(prompt[:100], MODEL_NAME)
-    llm_logger.debug(f"  └─ Target schema: {data_model.__name__}")
+    llm_logger.debug(f"  - Target schema: {data_model.__name__}")
     
     model = genai.GenerativeModel(
         model_name=MODEL_NAME,
@@ -107,7 +107,7 @@ def get_structured_data(prompt: str, data_model: typing.Type[BaseModel]):
         log_llm_response(success=True)
         
         parsed = data_model.model_validate_json(response.text)
-        llm_logger.debug(f"  └─ Response parsed successfully as {data_model.__name__}")
+        llm_logger.debug(f"  - Response parsed successfully as {data_model.__name__}")
         return parsed
         
     except Exception as e:
@@ -128,7 +128,7 @@ def get_text_content(prompt: str) -> str:
     try:
         response = model.generate_content(prompt)
         log_llm_response(success=True)
-        llm_logger.debug(f"  └─ Text response: {len(response.text)} characters")
+        llm_logger.debug(f"  - Text response: {len(response.text)} characters")
         return response.text
         
     except Exception as e:
