@@ -6,6 +6,7 @@ raw product data into validated models.
 """
 
 import os
+import json
 from typing import Any, Dict, List, Optional
 
 from src.core.base_agent import BaseAgent, AgentCapability, AgentGoal, AgentState
@@ -22,7 +23,7 @@ class ParserAgent(BaseAgent):
     Autonomous agent for parsing raw product data.
     
     Capabilities:
-    - parse_raw_data: Extract structured product data from raw text
+    - parse_raw_data: Extract structured product data from JSON or text input
     - validate_data: Validate extracted data against schema
     
     The ParserAgent operates autonomously, receiving goals from
@@ -37,8 +38,8 @@ class ParserAgent(BaseAgent):
             capabilities=[
                 AgentCapability(
                     name="parse_raw_data",
-                    description="Parse raw text input into structured ProductData",
-                    input_types=["raw_text", "file_path"],
+                    description="Parse JSON or text input into structured ProductData",
+                    input_types=["json_file", "text_file", "raw_text"],
                     output_types=["ProductData"]
                 ),
                 AgentCapability(
@@ -65,13 +66,14 @@ class ParserAgent(BaseAgent):
         
         # Decision: Determine the source of data
         if "file_path" in context:
+            file_path = context["file_path"]
             self.memory.record_decision(
                 "Read from file",
-                f"File path provided: {context['file_path']}"
+                f"File path provided: {file_path}"
             )
             plan.append({
                 "action": "read_file",
-                "params": {"path": context["file_path"]}
+                "params": {"path": file_path}
             })
         elif "raw_text" in context:
             self.memory.record_decision(
@@ -82,20 +84,29 @@ class ParserAgent(BaseAgent):
                 "action": "use_raw_text",
                 "params": {"text": context["raw_text"]}
             })
+        elif "json_data" in context:
+            self.memory.record_decision(
+                "Use provided JSON",
+                "JSON data provided directly in context"
+            )
+            plan.append({
+                "action": "use_json_data",
+                "params": {"data": context["json_data"]}
+            })
         else:
-            # Default to standard input file
+            # Default to standard JSON input file
             self.memory.record_decision(
                 "Use default input file",
-                "No source specified, using default data/raw_input.txt"
+                "No source specified, using default data/raw_input.json"
             )
             plan.append({
                 "action": "read_file",
-                "params": {"path": "data/raw_input.txt"}
+                "params": {"path": "data/raw_input.json"}
             })
             
         # Add parsing step
         plan.append({
-            "action": "parse_with_llm",
+            "action": "parse_data",
             "params": {}
         })
         
@@ -120,7 +131,8 @@ class ParserAgent(BaseAgent):
         
         The agent carries out each step, adapting if needed.
         """
-        raw_text = None
+        input_data = None  # Can be JSON dict or raw text
+        is_json = False
         product_data = None
         
         for step in plan:
@@ -131,20 +143,31 @@ class ParserAgent(BaseAgent):
             
             try:
                 if action == "read_file":
-                    raw_text = self._read_file(params["path"])
-                    if not raw_text:
+                    input_data, is_json = self._read_file(params["path"])
+                    if input_data is None:
                         self.memory.record_outcome(action, False, "File not found or empty")
                         return False
-                    self.memory.record_outcome(action, True, f"Read {len(raw_text)} characters")
+                    file_type = "JSON" if is_json else "text"
+                    self.memory.record_outcome(action, True, f"Read {file_type} data")
                     
                 elif action == "use_raw_text":
-                    raw_text = params["text"]
+                    input_data = params["text"]
+                    is_json = False
                     self.memory.record_outcome(action, True)
                     
-                elif action == "parse_with_llm":
-                    product_data = self._parse_with_llm(raw_text)
+                elif action == "use_json_data":
+                    input_data = params["data"]
+                    is_json = True
+                    self.memory.record_outcome(action, True)
+                    
+                elif action == "parse_data":
+                    if is_json:
+                        product_data = self._parse_json(input_data)
+                    else:
+                        product_data = self._parse_with_llm(input_data)
+                        
                     if not product_data:
-                        self.memory.record_outcome(action, False, "LLM parsing failed")
+                        self.memory.record_outcome(action, False, "Parsing failed")
                         return False
                     self.memory.record_outcome(action, True, f"Parsed: {product_data.name}")
                     
@@ -166,29 +189,82 @@ class ParserAgent(BaseAgent):
                 
         return True
         
-    def _read_file(self, file_path: str) -> Optional[str]:
-        """Read raw text from a file."""
+    def _read_file(self, file_path: str) -> tuple[Optional[Any], bool]:
+        """
+        Read data from a file (JSON or text).
+        
+        Returns:
+            tuple: (data, is_json) - data and whether it's JSON
+        """
         if not os.path.exists(file_path):
             self.logger.error(f"Input file not found: {file_path}")
-            return None
+            return None, False
             
         with open(file_path, "r", encoding="utf-8") as f:
-            raw_text = f.read()
-            
-        self.memory.record_observation({
-            "type": "file_read",
-            "path": file_path,
-            "size": len(raw_text),
-            "lines": len(raw_text.split('\n'))
-        })
+            content = f.read()
         
-        self.logger.info(f"Read {len(raw_text)} characters from {file_path}")
-        return raw_text
+        # Check if it's a JSON file
+        is_json = file_path.endswith('.json')
+        
+        if is_json:
+            try:
+                data = json.loads(content)
+                self.memory.record_observation({
+                    "type": "json_file_read",
+                    "path": file_path,
+                    "keys": list(data.keys()) if isinstance(data, dict) else "array"
+                })
+                self.logger.info(f"Read JSON file: {file_path}")
+                return data, True
+            except json.JSONDecodeError as e:
+                self.logger.error(f"Invalid JSON in {file_path}: {e}")
+                return None, False
+        else:
+            self.memory.record_observation({
+                "type": "text_file_read",
+                "path": file_path,
+                "size": len(content),
+                "lines": len(content.split('\n'))
+            })
+            self.logger.info(f"Read text file: {file_path} ({len(content)} characters)")
+            return content, False
+            
+    def _parse_json(self, json_data: Dict[str, Any]) -> Optional[ProductData]:
+        """
+        Parse JSON data directly into ProductData.
+        
+        This is more reliable than LLM parsing for structured input.
+        """
+        self.logger.info("Parsing JSON data directly")
+        
+        try:
+            # Map JSON keys to ProductData fields
+            product_data = ProductData(
+                name=json_data.get("product_name", ""),
+                concentration=json_data.get("concentration"),
+                skin_type=json_data.get("skin_type", []),
+                key_ingredients=json_data.get("key_ingredients", []),
+                benefits=json_data.get("benefits", []),
+                usage_instructions=json_data.get("how_to_use", ""),
+                side_effects=json_data.get("side_effects"),
+                price_inr=float(json_data.get("price_inr", 0))
+            )
+            
+            self.logger.info(f"Parsed JSON successfully: {product_data.name}")
+            self.logger.debug(f"  - Price: Rs.{product_data.price_inr}")
+            self.logger.debug(f"  - Ingredients: {len(product_data.key_ingredients)} items")
+            self.logger.debug(f"  - Benefits: {len(product_data.benefits)} items")
+            
+            return product_data
+            
+        except Exception as e:
+            self.logger.error(f"Failed to parse JSON: {e}")
+            return None
         
     def _parse_with_llm(self, raw_text: str) -> Optional[ProductData]:
         """Use LLM to parse raw text into structured data."""
         
-        self.logger.info("Sending data to LLM for structured extraction")
+        self.logger.info("Sending text data to LLM for structured extraction")
         
         prompt = f"""
         You are an expert Data Parsing Agent.
@@ -208,8 +284,8 @@ class ParserAgent(BaseAgent):
         try:
             product_data = get_structured_data(prompt, ProductData)
             
-            self.logger.info(f"✓ Data parsed successfully: {product_data.name}")
-            self.logger.debug(f"  - Price: ₹{product_data.price_inr}")
+            self.logger.info(f"Data parsed successfully: {product_data.name}")
+            self.logger.debug(f"  - Price: Rs.{product_data.price_inr}")
             self.logger.debug(f"  - Ingredients: {len(product_data.key_ingredients)} items")
             self.logger.debug(f"  - Benefits: {len(product_data.benefits)} items")
             
@@ -235,7 +311,7 @@ class ParserAgent(BaseAgent):
             self.logger.warning("Validation: Invalid price")
             return False
             
-        self.logger.info("✓ Product data validation passed")
+        self.logger.info("Product data validation passed")
         return True
         
     def _publish_results(self, product_data: ProductData, goal_id: str) -> None:
@@ -277,7 +353,22 @@ class ParserAgent(BaseAgent):
             if raw_text:
                 product_data = self._parse_with_llm(raw_text)
                 if product_data:
-                    # Send response back
+                    self.send_message(
+                        MessageType.DATA_RESPONSE,
+                        message.sender,
+                        {
+                            "task": task_name,
+                            "result": product_data.model_dump(),
+                            "success": True
+                        }
+                    )
+                    return
+                    
+        elif task_name == "parse_json":
+            json_data = params.get("data")
+            if json_data:
+                product_data = self._parse_json(json_data)
+                if product_data:
                     self.send_message(
                         MessageType.DATA_RESPONSE,
                         message.sender,
@@ -309,12 +400,16 @@ def parse_raw_data(file_path: str) -> ProductData:
     agent = ParserAgent()
     
     # Read file
-    raw_text = agent._read_file(file_path)
-    if not raw_text:
+    input_data, is_json = agent._read_file(file_path)
+    if input_data is None:
         raise FileNotFoundError(f"Input file not found at: {file_path}")
+    
+    # Parse based on file type
+    if is_json:
+        product_data = agent._parse_json(input_data)
+    else:
+        product_data = agent._parse_with_llm(input_data)
         
-    # Parse
-    product_data = agent._parse_with_llm(raw_text)
     if not product_data:
         raise ValueError("Failed to parse product data")
         

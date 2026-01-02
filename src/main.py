@@ -243,7 +243,7 @@ def run_dynamic_multi_agent_system():
     
     # Define WHAT we want (outputs), not HOW to get it
     required_outputs = ["product_page", "faq_page", "comparison_page"]
-    input_context = {"file_path": "data/raw_input.txt"}
+    input_context = {"file_path": "data/raw_input.json"}
     
     # Workflow is GENERATED based on available capabilities
     workflow = DynamicWorkflowGenerator.generate_workflow(
